@@ -8,7 +8,7 @@ import com.sashakhyzhun.locationmocker.data.repository.MockLocationRepository
 
 class MainViewModel constructor(app: Application) : AndroidViewModel(app) {
 
-    private val mRepository: MockLocationRepository = MockLocationRepository(app)
+    private var mRepository: MockLocationRepository = MockLocationRepository(app)
     private var mAllLocations: LiveData<List<MockLocation>>
 
     init {
@@ -19,6 +19,10 @@ class MainViewModel constructor(app: Application) : AndroidViewModel(app) {
 
     fun insert(mockLocation: MockLocation) {
         mRepository.insert(mockLocation)
+    }
+
+    fun delete(mockLocation: MockLocation) {
+        mRepository.delete(mockLocation)
     }
 
 }

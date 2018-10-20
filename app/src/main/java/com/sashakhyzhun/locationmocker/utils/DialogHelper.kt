@@ -2,9 +2,11 @@ package com.sashakhyzhun.locationmocker.utils
 
 import android.app.AlertDialog
 import android.app.Activity
+import android.content.DialogInterface
 import android.widget.EditText
 import android.widget.TextView
 import com.sashakhyzhun.locationmocker.R
+import com.sashakhyzhun.locationmocker.data.model.MockLocation
 
 
 object DialogHelper {
@@ -34,6 +36,21 @@ object DialogHelper {
         }
     }
 
+    fun removeLocation(activity: Activity, mockLocation: MockLocation, action: (title: String) -> Unit) {
+        val dialog = AlertDialog.Builder(activity)
+        dialog.setTitle("Are you sure you want to delete?")
+        dialog.setCancelable(true)
 
+        dialog.setPositiveButton("Yes") { it, _ ->
+            action(mockLocation.title)
+            it.dismiss()
+        }
+        dialog.setNegativeButton("No") { it, _ ->
+            it.cancel()
+        }
+
+        dialog.create()
+        dialog.show()
+    }
 
 }
