@@ -28,13 +28,14 @@ import android.support.annotation.NonNull
  * @property [location] Getter and Setter of location ([latitude] and [longitude])
  */
 
+
 @Entity(tableName = "mock_location_table")
 data class MockLocation (
         @PrimaryKey @NonNull @ColumnInfo(name = "title") var title: String = "",
         var latitude: Double = 0.0,
         var longitude: Double = 0.0,
-        var enabled: Boolean = true,
-        var interval: Long = 60_000, // 60 sec
+        var enabled: Boolean = false,
+        var interval: Long = 10_000, // 60 sec
         var accuracy: Float = 5F,
         var altitude: Double? = null
 ) {

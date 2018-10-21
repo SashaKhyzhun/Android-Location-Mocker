@@ -6,4 +6,8 @@ interface AdapterCallback {
 
     fun onLongClicked(mockLocation: MockLocation)
 
+    fun onStartClicked(mockLocation: MockLocation)
+
+    fun onStopClicked(mockLocation: MockLocation)
+
 }

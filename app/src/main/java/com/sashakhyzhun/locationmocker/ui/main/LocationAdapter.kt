@@ -36,8 +36,22 @@ class LocationAdapter
                 callback.onLongClicked(item)
                 true
             }
+
+            vh.tvStart.setOnClickListener {
+                item.enabled = true
+                vh.tvStart.isEnabled = false
+                vh.tvStop.isEnabled = true
+                callback.onStartClicked(item)
+            }
+            vh.tvStop.setOnClickListener {
+                item.enabled = false
+                vh.tvStart.isEnabled = true
+                vh.tvStop.isEnabled = false
+                callback.onStopClicked(item)
+            }
         }
     }
+
 
     override fun getItemCount(): Int = mockLocations?.size ?: 0
 
@@ -51,6 +65,9 @@ class LocationAdapter
         val tvTitle: TextView = view.findViewById(R.id.text_view_title)
         val tvLat: TextView = view.findViewById(R.id.text_view_lat)
         val tvLong: TextView = view.findViewById(R.id.text_view_long)
+
+        val tvStart: TextView = view.findViewById(R.id.text_view_start)
+        val tvStop: TextView = view.findViewById(R.id.text_view_stop)
     }
 
 }

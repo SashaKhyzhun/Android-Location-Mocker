@@ -5,7 +5,6 @@ import android.content.Context
 import android.location.Location
 import android.location.LocationManager
 import timber.log.Timber
-import java.lang.Exception
 
 object LocationHelper {
 

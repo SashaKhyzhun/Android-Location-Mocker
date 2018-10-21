@@ -1,8 +1,7 @@
 package com.sashakhyzhun.locationmocker.utils
 
-import android.app.AlertDialog
 import android.app.Activity
-import android.content.DialogInterface
+import android.app.AlertDialog
 import android.widget.EditText
 import android.widget.TextView
 import com.sashakhyzhun.locationmocker.R
@@ -11,6 +10,7 @@ import com.sashakhyzhun.locationmocker.data.model.MockLocation
 
 object DialogHelper {
 
+    @JvmStatic
     fun addNewLocation(activity: Activity, action: (title: String, lat: Double, long: Double) -> Unit) {
         val mBuilder = AlertDialog.Builder(activity)
         mBuilder.setTitle("Add mock location")
