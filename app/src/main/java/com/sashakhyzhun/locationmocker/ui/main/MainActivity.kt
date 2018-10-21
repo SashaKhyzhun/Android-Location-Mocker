@@ -13,7 +13,7 @@ import com.sashakhyzhun.locationmocker.utils.DialogHelper
 import timber.log.Timber
 
 
-class MainActivity : AppCompatActivity(), AdapterCallback {
+class MainActivity : AppCompatActivity(), LocationAdapter.AdapterCallback {
 
     private lateinit var fab: FloatingActionButton
     private lateinit var rv: RecyclerView

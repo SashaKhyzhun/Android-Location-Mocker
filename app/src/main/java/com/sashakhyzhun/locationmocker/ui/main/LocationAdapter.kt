@@ -70,4 +70,14 @@ class LocationAdapter
         val tvStop: TextView = view.findViewById(R.id.text_view_stop)
     }
 
+    interface AdapterCallback {
+
+        fun onLongClicked(mockLocation: MockLocation)
+
+        fun onStartClicked(mockLocation: MockLocation)
+
+        fun onStopClicked(mockLocation: MockLocation)
+
+    }
+
 }

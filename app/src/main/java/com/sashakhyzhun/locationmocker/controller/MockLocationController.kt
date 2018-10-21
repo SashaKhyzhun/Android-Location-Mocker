@@ -1,4 +1,4 @@
-package com.sashakhyzhun.locationmocker.ui.main
+package com.sashakhyzhun.locationmocker.controller
 
 import android.content.Context
 import android.location.Location
@@ -7,20 +7,23 @@ import android.os.Build
 import android.os.SystemClock
 import timber.log.Timber
 
-class MockLocationProvider(
-        private val providerName: String,
-        private val ctx: Context
-) {
+class MockLocationController(private val providerName: String, private val ctx: Context) {
 
 
     private val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager?
 
     init {
         try {
-            lm?.addTestProvider(providerName, false, false,
-                    false, false, false,
-                    true, true, 0, 5)
-
+            lm?.addTestProvider(providerName,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    true,
+                    0,
+                    5)
             lm?.setTestProviderEnabled(providerName, true)
         } catch (e: SecurityException) {
             throw SecurityException("Not allowed to perform MOCK_LOCATION")
@@ -71,6 +74,8 @@ class MockLocationProvider(
         try {
             lm?.removeTestProvider(providerName)
         } catch (ex: IllegalStateException) {
+            Timber.e(ex)
+        } catch (ex: Exception) {
             Timber.e(ex)
         }
     }
