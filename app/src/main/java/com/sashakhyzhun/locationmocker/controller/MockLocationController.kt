@@ -9,7 +9,6 @@ import timber.log.Timber
 
 class MockLocationController(private val providerName: String, private val ctx: Context) {
 
-
     private val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager?
 
     init {
