@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">LocationMocker</string>
-
-
+    <string name="app_name">Location Mocker</string>
+    <!--  Strings from activity_main.xml layout  -->
+    <!-- Latitude abbreviation  -->
     <string name="ActivityMain_Lat">Lat</string>
     <!-- Longitude abbreviation  -->
     <string name="ActivityMain_Long">Long</string>
@@ -30,6 +30,4 @@
     <!--  Strings from ApplyMockBroadcastReceiver.java  -->
     <string name="ApplyMockBroadRec_MockNotApplied">"Mocked location not applied. You must enable mock location in developer settings. Service stopped."</string>
     <string name="ApplyMockBroadRec_Closed">Fake Traveler was closed. Mock location stopped.</string>
-
-
 </resources>
