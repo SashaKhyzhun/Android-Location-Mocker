@@ -1,0 +1,119 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".ui.main.MapsActivity">
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:id="@+id/cardViewID">
+        <fragment
+            android:id="@+id/place_autocomplete_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+            />
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/addToFavorite"
+            android:layout_gravity="center_vertical|end"
+            android:background="@mipmap/ic_favorite_border_black_24dp"
+            android:layout_marginEnd="48dp"
+            android:contentDescription="Favorites"
+            android:layout_marginRight="64dp" />
+
+    </android.support.v7.widget.CardView>
+
+
+        <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:map="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+
+    <!--<TextView-->
+        <!--android:id="@+id/latlongLocation"-->
+        <!--android:layout_width="fill_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:gravity="bottom"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:background="#ff058fff"-->
+        <!--android:paddingTop="5dp"-->
+        <!--android:paddingBottom="5dp"-->
+        <!--android:textColor="#ffffffff"-->
+        <!--android:paddingLeft="5dp"-->
+        <!--android:paddingRight="5dp" />-->
+
+    <!--<EditText-->
+        <!--android:id="@+id/TFaddress"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="34dp"-->
+        <!--android:layout_alignParentLeft="true"-->
+        <!--android:layout_alignParentTop="true"-->
+        <!--android:layout_marginLeft="18sp"-->
+        <!--android:layout_marginTop="18sp"-->
+        <!--android:layout_marginRight="18sp"-->
+        <!--android:hint="Search Location"-->
+        <!--android:textColor="@android:color/black"-->
+        <!--android:background="@android:color/white"-->
+        <!--android:maxLines="1"-->
+        <!--android:inputType="textPostalAddress"-->
+        <!--android:imeOptions="actionGo">-->
+    <!--</EditText>-->
+
+    <!--<Button-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="right|top"-->
+        <!--android:text="Demo Button"-->
+        <!--android:padding="10dp"-->
+        <!--android:layout_marginTop="20dp"-->
+        <!--android:paddingRight="10dp"-->
+        <!--android:id="@+id/button" />-->
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/start_faking"
+            android:layout_width="wrap_content"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom|end"
+            android:src="@mipmap/ic_play_arrow_white_24dp"
+
+            android:layout_marginBottom="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="16dp"
+            app:backgroundTint="@android:color/holo_green_light" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/find_my_location"
+            android:layout_width="wrap_content"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="16dp"
+            android:src="@mipmap/ic_crosshairs_gps_grey600_24dp"
+            app:backgroundTint="@android:color/white"
+            android:layout_above="@+id/start_faking"
+            android:layout_alignLeft="@+id/start_faking"
+            android:layout_alignStart="@+id/start_faking" />
+    </RelativeLayout>
+
+</FrameLayout>
+
+
+
+

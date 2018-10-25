@@ -7,4 +7,8 @@
     <color name="colorAccentDark">#004D85</color>
     <color name="colorAccentLight">#63A7E7</color>
     <color name="colorWhite">#ffffff</color>
+
+    <color name="red_tint">#ba4949</color>
+    <color name="green_tint">#6bba49</color>
+
 </resources>
