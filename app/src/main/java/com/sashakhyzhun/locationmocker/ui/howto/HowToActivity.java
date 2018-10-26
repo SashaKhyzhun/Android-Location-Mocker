@@ -21,7 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sashakhyzhun.locationmocker.R;
-import com.sashakhyzhun.locationmocker.ui.main.MapsActivity;
+import com.sashakhyzhun.locationmocker.ui.main.MainActivity;
 import com.sashakhyzhun.locationmocker.ui.mylist.MyListViewActivity;
 import com.sashakhyzhun.locationmocker.utils.MyStrings;
 
@@ -100,7 +100,7 @@ public class HowToActivity extends AppCompatActivity implements NavigationView.O
         int id = item.getItemId();
         if(id == R.id.nav_home){
 //            toast("Home");
-            Intent intent = new Intent (HowToActivity.this, MapsActivity.class);
+            Intent intent = new Intent (HowToActivity.this, MainActivity.class);
             startActivity(intent);
             intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 //            super.onBackPressed();

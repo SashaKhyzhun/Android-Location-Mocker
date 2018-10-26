@@ -28,7 +28,7 @@ import com.sashakhyzhun.locationmocker.adapters.EmptyListAdapter;
 import com.sashakhyzhun.locationmocker.adapters.MyLocationAdapter;
 import com.sashakhyzhun.locationmocker.data.model.MyLocation;
 import com.sashakhyzhun.locationmocker.ui.howto.HowToActivity;
-import com.sashakhyzhun.locationmocker.ui.main.MapsActivity;
+import com.sashakhyzhun.locationmocker.ui.main.MainActivity;
 import com.sashakhyzhun.locationmocker.utils.MyStrings;
 
 import java.util.ArrayList;
@@ -100,7 +100,7 @@ public class MyListViewActivity extends AppCompatActivity implements NavigationV
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                     MyLocation listItem = (MyLocation) listView.getItemAtPosition(i);
-                    Intent intent = new Intent(MyListViewActivity.this, MapsActivity.class);
+                    Intent intent = new Intent(MyListViewActivity.this, MainActivity.class);
                     intent.putExtra("from_id", "ListViewActivity");
                     intent.putExtra("place_name", listItem.placeName);
                     intent.putExtra("place_lati", listItem.latitude);
@@ -185,7 +185,7 @@ public class MyListViewActivity extends AppCompatActivity implements NavigationV
     public boolean onNavigationItemSelected(MenuItem item) {
         int id = item.getItemId();
         if(id == R.id.nav_home){
-            Intent intent = new Intent (MyListViewActivity.this, MapsActivity.class);
+            Intent intent = new Intent (MyListViewActivity.this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
             startActivity(intent);
 //            super.onBackPressed();

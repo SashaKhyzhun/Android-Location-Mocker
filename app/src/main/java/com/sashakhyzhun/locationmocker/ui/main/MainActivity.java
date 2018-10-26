@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -55,8 +56,6 @@ import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -76,12 +75,19 @@ import io.realm.Realm;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
 
-public class MapsActivity extends FragmentActivity implements /*LocationListener,*/ OnMapReadyCallback,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends FragmentActivity  implements
+        NavigationView.OnNavigationItemSelectedListener,
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleApiClient.ConnectionCallbacks {
 
-    private static final String TAG = MapsActivity.class.getSimpleName();
-    private GoogleMap mMap;
-    private CameraPosition mCameraPosition;
+        /*
+        LocationListener,
+        OnMapReadyCallback,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener
+        */
+
+
     private FloatingActionButton myLocationButton;
     private FloatingActionButton startFakingButton;
     PlaceAutocompleteFragment autocompleteFragment;
@@ -90,7 +96,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
     public float FAKE_ACCURACY = (float) 3.0f;
     private Realm realm;
 
-    // The entry point to Google Play services, used by the Places API and Fused Location Provider.
     private GoogleApiClient mGoogleApiClient;
     // A request object to store parameters for requests to the FusedLocationProviderApi.
     private LocationRequest mLocationRequest;
@@ -154,193 +159,22 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Retrieve location and camera position from saved instance state.
-
-        if (savedInstanceState != null) {
+                if (savedInstanceState != null) {
             mCurrentLocation = savedInstanceState.getParcelable(KEY_LOCATION);
-            mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
             searchBarText = savedInstanceState.getString(KEY_SEARCH_BAR);
             droppedMarker = savedInstanceState.getParcelable(KEY_DROPPED_PIN);
         }
 
-        // Retrieve the content view that renders the map.
-        // setContentView(R.layout.activity_maps);  use this when not using navigation drawer
-        // activity_main implements navigation drawer
         setContentView(R.layout.activity_main);
         ViewStub stub = (ViewStub) findViewById(R.id.layout_stub);
         stub.setLayoutResource(R.layout.activity_maps);
         View inflated = stub.inflate();
 
-        // Build the Play services client for use by the Fused Location Provider and the Places API.
-        buildGoogleApiClient();
-        mGoogleApiClient.connect();
-
-        // Initialize DB
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
-
-        // Initialize tools for navigation drawer
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-        navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-        addFav = (ImageView) findViewById(R.id.addToFavorite);
-        refreshFavoriteButton();
-
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private void goToLocation(MyLocation goToLocation) {
-        clearMap();
-        myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
-        searchBarText = goToLocation.placeName;
-        autocompleteFragment.setText(searchBarText);
-        LatLng latLng = new LatLng(goToLocation.latitude, goToLocation.longitude);
-        mMap.addMarker(new MarkerOptions().position(latLng));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
-        prepareFakeLocation(latLng);
-        refreshFavoriteButton();
-    }
-
-    /**
-     * Checks if "Mock Locations" is enabled(true) or disabled(false) in Developer Settings
-     * TODO: If it is disabled, ask user if they want to enable it
-     */
-    public boolean isMockLocationEnabled() {
-        boolean isMockEnabled = false;
-        try {
-            // if marshmallow
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                AppOpsManager opsManager = (AppOpsManager) this.getSystemService(Context.APP_OPS_SERVICE);
-                isMockEnabled = (opsManager.checkOp(AppOpsManager.OPSTR_MOCK_LOCATION, android.os.Process.myUid(), BuildConfig.APPLICATION_ID) == AppOpsManager.MODE_ALLOWED);
-            } else {
-                // in marshmallow this will always return true
-                isMockEnabled = !Settings.Secure.getString(this.getContentResolver(), "mock_location").equals("0");
-            }
-        } catch (Exception e) {
-            return isMockEnabled;
-        }
-        return isMockEnabled;
-    }
-
-
-    /**
-     * Get the device location and nearby places when the activity is restored after a pause.
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mGoogleApiClient.isConnected()) {
-            getDeviceLocation();
-        }
-    }
-
-    /**
-     * Pause activity
-     * Stop location updates when the activity is no longer in focus, to reduce battery consumption.
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mMap != null) {
-            mCameraPosition = mMap.getCameraPosition();
-        }
-        /*if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(
-                    mGoogleApiClient, this);
-        }*/
-    }
-
-    /**
-     * Saves the state of the map when the activity is paused.
-     */
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        if (mMap != null) {
-            outState.putParcelable(KEY_CAMERA_POSITION, mCameraPosition);
-            outState.putParcelable(KEY_LOCATION, mCurrentLocation);
-            outState.putString(KEY_SEARCH_BAR, searchBarText);
-            outState.putParcelable(KEY_DROPPED_PIN, droppedMarker);
-            setCameraPosition();
-        }
-    }
-
-    /**
-     * Gets the device's current location and builds the map
-     * when the Google Play services client is successfully connected.
-     */
-    @Override
-    public void onConnected(Bundle connectionHint) {
-        getDeviceLocation();
-        // Build the map.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-    }
-
-    /**
-     * Handles failure to connect to the Google Play services client.
-     */
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult result) {
-        // Refer to the reference doc for ConnectionResult to see what error codes might
-        // be returned in onConnectionFailed.
-        Log.d(TAG, "Play services connection failed: ConnectionResult.getErrorCode() = "
-                + result.getErrorCode());
-    }
-
-    /**
-     * Handles suspension of the connection to the Google Play services client.
-     */
-    @Override
-    public void onConnectionSuspended(int cause) {
-        Log.e("~~~~~", "*** onConnectionSuspended");
-        Log.d(TAG, "Play services connection suspended");
-    }
-
-    /**
-     * Handles back button press. If navigation drawer is open, then close the app
-     * otherwise do regular back press function.
-     */
-    @Override
-    public void onBackPressed() {
-        if (drawer.isDrawerOpen(Gravity.LEFT)) {
-            drawer.closeDrawer(Gravity.LEFT);
-        } else {
-//            super.onBackPressed();
-            this.finish();
-        }
-    }
-
-
-    /**
-     * Handles the callback when location changes.
-     */
-    /*@Override
-    public void onLocationChanged(Location location) {
-        mCurrentLocation = location;
-        // LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-    }*/
-
-    /**
-     * Manipulates the map when it's available.
-     * This callback is triggered when the map is ready to be used.
-     */
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void onMapReady(GoogleMap map) {
         // Checks to see if Call is made from a different activity
         // Initialize location manager and location provider
         final LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         final String provider = LocationManager.GPS_PROVIDER;
 
-        // Initialize main display elements of the screen including map, buttons and search bar
-        mMap = map;
         myLocationButton = (FloatingActionButton) findViewById(R.id.find_my_location);
         startFakingButton = (FloatingActionButton) findViewById(R.id.start_faking);
 
@@ -371,75 +205,12 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                clearMap();
             }
         });
 
         refreshFavoriteButton();
 
-        // Turn on the My Location layer and the related control on the map.
-        updateLocationUI();
 
-        // Use a custom info window adapter to handle multiple lines of text in the
-        // info window contents.
-        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-            @Override
-            // Return null here, so that getInfoContents() is called next.
-            public View getInfoWindow(Marker arg0) {
-                return null;
-            }
-
-            @Override
-            public View getInfoContents(Marker marker) {
-                // Inflate the layouts for the info window, title and snippet.
-                View infoWindow = getLayoutInflater().inflate(R.layout.custom_info_contents, null);
-                TextView title = ((TextView) infoWindow.findViewById(R.id.title));
-                title.setText(marker.getTitle());
-                TextView snippet = ((TextView) infoWindow.findViewById(R.id.snippet));
-                snippet.setText(marker.getSnippet());
-                return infoWindow;
-            }
-        });
-
-        /*
-         * Set the map's camera position to the current location of the device.
-         * If the previous state was saved, set the position to the saved state.
-         * If the current location is unknown, use a default position and zoom value.
-         */
-        getOldCameraPosition();
-        if (mCameraPosition != null) {
-            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(mCameraPosition));
-        } else if (mCurrentLocation != null) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                    new LatLng(mCurrentLocation.getLatitude(),
-                            mCurrentLocation.getLongitude()), DEFAULT_ZOOM));
-        } else if (oldCameraPosition != null) {
-            mMap.moveCamera(CameraUpdateFactory.newCameraPosition(oldCameraPosition));
-        } else {
-            Log.d(TAG, "Current location is null. Using defaults.");
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mDefaultLocation, 10));
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-            toast("Using Default");
-        }
-
-        /*
-         * Drops a marker when Long click is activated on the map
-         */
-        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-            @Override
-            public void onMapLongClick(LatLng point) {
-                mMap.clear();
-                myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(point);
-                markerOptions.title("Dropped Pin");
-                searchBarText = String.valueOf(String.format("%.6g%n", point.latitude)) + "," + String.valueOf(String.format("%.6g%n", point.longitude));
-                autocompleteFragment.setText(searchBarText);
-                mMap.addMarker(markerOptions);
-                prepareFakeLocation(point);
-                refreshFavoriteButton();
-            }
-        });
 
         myLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -449,8 +220,7 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
                 } else {
                     getDeviceLocation();
                     if (mCurrentLocation == null) {
-                        snackBarForGPS();
-                        updateLocationUI();
+
                     } else {
                         if (isMocking) {
                             toast("Mocked current location");
@@ -458,9 +228,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
                             toast("Real current location");
                         }
                         myLocationButton.setImageResource(R.mipmap.ic_launcher_blue);
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                new LatLng(mCurrentLocation.getLatitude(),
-                                        mCurrentLocation.getLongitude()), DEFAULT_ZOOM));
                     }
                 }
 
@@ -481,34 +248,20 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(Place place) {
-                mMap.clear();
                 myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
                 searchBarText = place.getName().toString();
                 LatLng point = place.getLatLng();
                 MarkerOptions markerOptions = new MarkerOptions();
                 markerOptions.position(point);
                 markerOptions.title(searchBarText);
-                mMap.addMarker(markerOptions);
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(point, DEFAULT_ZOOM));
                 prepareFakeLocation(point);
                 refreshFavoriteButton();
             }
 
             @Override
-            public void onError(Status status) {
-                Log.i(TAG, "An error occurred: " + status);
-            }
+            public void onError(Status status) { }
         });
 
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                marker.showInfoWindow();
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(marker.getPosition(), DEFAULT_ZOOM));
-                toast("Press Green button to start faking location");
-                return true;
-            }
-        });
 
         startFakingButton.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
@@ -525,58 +278,71 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
                 setupStartStopButton();
             }
         });
-        snackBarForMockSetting();
-        isCallFromDifferentActivity();
+
+        // Build the Play services client for use by the Fused Location Provider and the Places API.
+        buildGoogleApiClient();
+        createLocationRequest();
+        // Initialize DB
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
+
+        // Initialize tools for navigation drawer
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+        addFav = (ImageView) findViewById(R.id.addToFavorite);
+        refreshFavoriteButton();
 
     }
 
-    private void setCameraPosition() {
-        CameraPosition cameraPosition = mMap.getCameraPosition();
-        SharedPreferences.Editor editor = getSharedPreferences(MyStrings.cpFile, MODE_PRIVATE).edit();
-        editor.putString(KEY_CAMERA_POSITION, cameraPosition.toString());
-        editor.putFloat(MyStrings.cpLATI, (float) cameraPosition.target.latitude);
-        editor.putFloat(MyStrings.cpLONG, (float) cameraPosition.target.longitude);
-        editor.putFloat(MyStrings.cpZOOM, cameraPosition.zoom);
-        editor.putFloat(MyStrings.cpTILT, cameraPosition.tilt);
-        editor.putFloat(MyStrings.cpBEAR, cameraPosition.bearing);
-        editor.apply();
-
-    }
-
-    private void getOldCameraPosition() {
-        SharedPreferences prefs = getSharedPreferences(MyStrings.cpFile, MODE_PRIVATE);
-        float lati = prefs.getFloat(MyStrings.cpLATI, 0);
-        float longi = prefs.getFloat(MyStrings.cpLONG, 0);
-        LatLng target = new LatLng(lati, longi);
-        float zoom = prefs.getFloat(MyStrings.cpZOOM, 0);
-        float tilt = prefs.getFloat(MyStrings.cpTILT, 0);
-        float bearing = prefs.getFloat(MyStrings.cpBEAR, 0);
-        oldCameraPosition = new CameraPosition.Builder()
-                .target(target)
-                .zoom(zoom)
-                .tilt(tilt)
-                .bearing(bearing)
-                .build();
-
-    }
-
-    private void snackBarForGPS() {
-        Snackbar.make(findViewById(android.R.id.content), "Location services is disabled", Snackbar.LENGTH_LONG)
-                .setAction("SETTINGS", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                        Toast.makeText(getApplicationContext(), "Turn on GPS", Toast.LENGTH_LONG).show();
-                    }
-                })
-                .setActionTextColor(Color.RED)
-                .show();
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void goToLocation(MyLocation goToLocation) {
+        myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
+        searchBarText = goToLocation.placeName;
+        autocompleteFragment.setText(searchBarText);
+        LatLng latLng = new LatLng(goToLocation.latitude, goToLocation.longitude);
+        prepareFakeLocation(latLng);
+        refreshFavoriteButton();
     }
 
     /**
-     * Checks Whether this activity is called from a different activity.
-     * If so, then 'from_id' is checked which determines what to do.
+     * Checks if "Mock Locations" is enabled(true) or disabled(false) in Developer Settings
+     * TODO: If it is disabled, ask user if they want to enable it
      */
+    public boolean isMockLocationEnabled() {
+        boolean isMockEnabled = false;
+        try {
+            // if marshmallow
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                AppOpsManager opsManager = (AppOpsManager) this.getSystemService(Context.APP_OPS_SERVICE);
+                isMockEnabled = (opsManager.checkOp(AppOpsManager.OPSTR_MOCK_LOCATION, android.os.Process.myUid(), BuildConfig.APPLICATION_ID) == AppOpsManager.MODE_ALLOWED);
+            } else {
+                // in marshmallow this will always return true
+                isMockEnabled = !Settings.Secure.getString(this.getContentResolver(), "mock_location").equals("0");
+            }
+        } catch (Exception e) {
+            return isMockEnabled;
+        }
+        return isMockEnabled;
+    }
+
+
+
+    @Override
+    public void onBackPressed() {
+        if (drawer.isDrawerOpen(Gravity.LEFT)) {
+            drawer.closeDrawer(Gravity.LEFT);
+        } else {
+            this.finish();
+        }
+    }
+
+
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void isCallFromDifferentActivity() {
         Intent intent = this.getIntent();
@@ -597,14 +363,17 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public void clearMap() {
-        mMap.clear();
-        droppedMarker = null;
-        searchBarText = "";
-        refreshFavoriteButton();
-        autocompleteFragment.setText(searchBarText);
+    private synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this,this)
+                .addConnectionCallbacks(this)
+                .addApi(LocationServices.API)
+                .addApi(Places.GEO_DATA_API)
+                .addApi(Places.PLACE_DETECTION_API)
+                .build();
+        createLocationRequest();
     }
+
 
     /**
      * If marker is place, it makes 'favorite' button visible
@@ -675,7 +444,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
      */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void removePlaceFromFavorites() {
-//        RealmResults<Favorites> favorite = realm.where(Favorites.class).equalTo("latitude", droppedMarker.getLatitude()).equalTo("longitude", droppedMarker.getLongitude()).findAll();
         RealmResults<MyLocation> favorite = realm.where(MyLocation.class)
                 .equalTo("id", MyStrings.favID)
                 .equalTo("latitude", droppedMarker.getLatitude())
@@ -695,7 +463,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
      * NOTE: There can only be ONE dropped marker at any given time
      */
     public Boolean checkIfMarkerExistsInFavorites() {
-//        RealmQuery<Favorites> courses = realm.where(Favorites.class).equalTo("latitude", droppedMarker.getLatitude()).equalTo("longitude", droppedMarker.getLongitude());
         RealmQuery<MyLocation> favorites = realm.where(MyLocation.class)
                 .equalTo("id", MyStrings.favID)
                 .equalTo("latitude", droppedMarker.getLatitude())
@@ -705,19 +472,12 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
     }
 
     public Boolean checkIfMarkerExistsInRecent() {
-//        RealmQuery<Favorites> courses = realm.where(Favorites.class).equalTo("latitude", droppedMarker.getLatitude()).equalTo("longitude", droppedMarker.getLongitude());
         RealmQuery<MyLocation> recent = realm.where(MyLocation.class).equalTo("id", MyStrings.recID).equalTo("latitude", droppedMarker.getLatitude()).equalTo("longitude", droppedMarker.getLongitude());
         return recent.count() != 0;
     }
 
 
     public void addPlaceToFavoritesDB(final String placeName) {
-        /*realm.beginTransaction();
-        final Favorites favPlace = realm.createObject(Favorites.class);
-        favPlace.placeName = placeName;
-        favPlace.latitude = droppedMarker.getLatitude();
-        favPlace.longitude = droppedMarker.getLongitude();
-        realm.commitTransaction();*/
         realm.beginTransaction();
         final MyLocation favPlace = realm.createObject(MyLocation.class);
         favPlace.id = MyStrings.favID;
@@ -730,12 +490,12 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
     public void setupStartStopButton() {
         if (isMocking) {
             //show red button to stop
-            startFakingButton.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(MapsActivity.this, R.color.red_tint)));
+            startFakingButton.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.red_tint)));
             startFakingButton.setImageResource(R.mipmap.ic_stop_white_24dp);
 
         } else {
             //show green button to start
-            startFakingButton.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(MapsActivity.this, R.color.green_tint)));
+            startFakingButton.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(MainActivity.this, R.color.green_tint)));
             startFakingButton.setImageResource(R.mipmap.ic_play_arrow_white_24dp);
         }
     }
@@ -743,7 +503,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
     public void stopFakingLocation(LocationManager lm, String provider) {
         lm.removeTestProvider(provider);
         isMocking = false;
-        updateLocationUI();
         toast("Location Mocking stopped");
     }
 
@@ -789,11 +548,6 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
                     }
                 }
             }, 0, 2000);
-            /*lm.setTestProviderEnabled(provider, true);
-            lm.setTestProviderStatus(provider,
-                    LocationProvider.AVAILABLE,
-                    null, System.currentTimeMillis());
-            lm.setTestProviderLocation(provider, newLocation);*/
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
@@ -836,25 +590,7 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         }
     }
 
-    /**
-     * Builds a GoogleApiClient.
-     * Uses the addApi() method to request the Google Places API and the Fused Location Provider.
-     */
-    private synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this /* FragmentActivity */,
-                        this /* OnConnectionFailedListener */)
-                .addConnectionCallbacks(this)
-                .addApi(LocationServices.API)
-                .addApi(Places.GEO_DATA_API)
-                .addApi(Places.PLACE_DETECTION_API)
-                .build();
-        createLocationRequest();
-    }
 
-    /**
-     * Sets up the location request.
-     */
     private void createLocationRequest() {
         mLocationRequest = LocationRequest.create();
         mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
@@ -862,31 +598,15 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
-    /**
-     * Gets the current location of the device
-     */
+
     private void getDeviceLocation() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
         if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true;
-        } /*else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }*/
-        /*
-         * Get the best and most recent location of the device, which may be null in rare
-         * cases when a location is not available.
-         * Also request regular updates about the device location.
-         */
+        }
         if (mLocationPermissionGranted) {
-            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            mCurrentLocation = new Location(LocationManager.GPS_PROVIDER); // was method to get current location;
         }
     }
 
@@ -920,83 +640,43 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
                 }
             }
         }
-        updateLocationUI();
     }
 
-    /**
-     * Updates the map's UI settings based on whether the user has granted location permission.
-     */
-    @SuppressWarnings("MissingPermission")
-    private void updateLocationUI() {
-        if (mMap == null) {
-            return;
-        }
-        if (mLocationPermissionGranted) {
-            //set this to 'false' to get rid of "blue dot"
-            mMap.setMyLocationEnabled(true);
-            //set this to 'true' to show default myLocation Button
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-        } else {
-            mMap.setMyLocationEnabled(false);
-            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-            mCurrentLocation = null;
-        }
-    }
-
-    public void toggleMapType() {
-        if (!isSatellite) {
-            mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        } else {
-            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        }
-        isSatellite = !isSatellite;
-    }
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.nav_home) {
-//            toast("Home");
             drawer.closeDrawer(GravityCompat.START);
         } else if (id == R.id.nav_enterCoordinates) {
-//            toast("Enter Coordinates");
             searchByCoordinates();
         } else if (id == R.id.nav_howto) {
-//            toast("How To");
-            Intent intent = new Intent(MapsActivity.this, HowToActivity.class);
+            Intent intent = new Intent(MainActivity.this, HowToActivity.class);
             intent.putExtra("from_id", MyStrings.howID);
             intent.putExtra("mock_status", isMocking);
             startActivity(intent);
-        } else if (id == R.id.nav_satellite) {
-//            toast("Satellite");
-            toggleMapType();
+
         } else if (id == R.id.nav_favorites) {
-//            toast("Favorites");
-            Intent intent = new Intent(MapsActivity.this, MyListViewActivity.class);
+            Intent intent = new Intent(MainActivity.this, MyListViewActivity.class);
             intent.putExtra("from_id", MyStrings.favID);
             intent.putExtra("mock_status", isMocking);
             startActivity(intent);
         } else if (id == R.id.nav_recent) {
-//            toast("Recent");
-            Intent intent = new Intent(MapsActivity.this, MyListViewActivity.class);
+            Intent intent = new Intent(MainActivity.this, MyListViewActivity.class);
             intent.putExtra("from_id", MyStrings.recID);
             intent.putExtra("mock_status", isMocking);
             startActivity(intent);
         } else if (id == R.id.nav_rate) {
-//            toast("Rate");
             Intent rate = new Intent(Intent.ACTION_VIEW, Uri.parse(MyStrings.RATE_URL));
             startActivity(rate);
         } else if (id == R.id.nav_share) {
-//            toast("Sharing");
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
             i.putExtra(Intent.EXTRA_SUBJECT, "Location Mocker");
             i.putExtra(Intent.EXTRA_TEXT, MyStrings.SHARE_MSG);
             startActivity(Intent.createChooser(i, "Share via"));
         }
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -1084,5 +764,20 @@ public class MapsActivity extends FragmentActivity implements /*LocationListener
         editText.setCursorVisible(false);
         final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        getDeviceLocation();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
     }
 }
