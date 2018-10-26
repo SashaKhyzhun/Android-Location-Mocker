@@ -75,42 +75,26 @@ import io.realm.Realm;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
 
+import static com.sashakhyzhun.locationmocker.utils.CommonUtil.forceCloseKeyboard;
+
 public class MainActivity extends FragmentActivity  implements
-        NavigationView.OnNavigationItemSelectedListener,
         GoogleApiClient.OnConnectionFailedListener,
         GoogleApiClient.ConnectionCallbacks {
 
-        /*
-        LocationListener,
-        OnMapReadyCallback,
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener
-        */
-
-
     private FloatingActionButton myLocationButton;
     private FloatingActionButton startFakingButton;
-    PlaceAutocompleteFragment autocompleteFragment;
+
     private Location droppedMarker = null;
     private Boolean isMocking = false;
     public float FAKE_ACCURACY = (float) 3.0f;
     private Realm realm;
-
     private GoogleApiClient mGoogleApiClient;
-    // A request object to store parameters for requests to the FusedLocationProviderApi.
-    private LocationRequest mLocationRequest;
+
     // The desired interval for location updates. Inexact. Updates may be more or less frequent.
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
     // The fastest rate for active location updates. Exact. Updates will never be more frequent
     // than this value.
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
-            UPDATE_INTERVAL_IN_MILLISECONDS / 2;
-
-    // A default location (New York City) and default zoom to use when location permission is
-    // not granted.
-    private CameraPosition oldCameraPosition;
-    private final LatLng mDefaultLocation = new LatLng(40.730610, -73.935242);
-    private static final int DEFAULT_ZOOM = 18;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
 
@@ -118,23 +102,12 @@ public class MainActivity extends FragmentActivity  implements
     private Location mCurrentLocation;
 
     // Keys for storing activity state.
-    private static final String KEY_CAMERA_POSITION = "camera_position";
     private static final String KEY_LOCATION = "location";
     private static final String KEY_SEARCH_BAR = "search";
     private static final String KEY_DROPPED_PIN = "dropped";
-    private SharedPreferences sharedPreferences;
-    private SharedPreferences.Editor editor;
-    // Tools for navigation drawer
-    protected DrawerLayout drawer;
-    protected Toolbar toolbar;
-    protected ActionBarDrawerToggle toggle;
-    protected NavigationView navigationView;
-    private Boolean isSatellite = false;
-    private ImageView addFav;
-    private EditText searchBar = null;
-    private String searchBarText = "";
-    // Tools for navigation drawer
 
+    private ImageView addFav;
+    private String searchBarText = "";
 
     // Location Listener when mocking location (basically useless)
     private LocationListener lis = new LocationListener() {
@@ -159,7 +132,7 @@ public class MainActivity extends FragmentActivity  implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-                if (savedInstanceState != null) {
+        if (savedInstanceState != null) {
             mCurrentLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             searchBarText = savedInstanceState.getString(KEY_SEARCH_BAR);
             droppedMarker = savedInstanceState.getParcelable(KEY_DROPPED_PIN);
@@ -168,50 +141,17 @@ public class MainActivity extends FragmentActivity  implements
         setContentView(R.layout.activity_main);
         ViewStub stub = (ViewStub) findViewById(R.id.layout_stub);
         stub.setLayoutResource(R.layout.activity_maps);
-        View inflated = stub.inflate();
+        stub.inflate();
 
         // Checks to see if Call is made from a different activity
         // Initialize location manager and location provider
         final LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         final String provider = LocationManager.GPS_PROVIDER;
 
+
+
+
         myLocationButton = (FloatingActionButton) findViewById(R.id.find_my_location);
-        startFakingButton = (FloatingActionButton) findViewById(R.id.start_faking);
-
-        addFav = (ImageView) findViewById(R.id.addToFavorite);
-        autocompleteFragment = (PlaceAutocompleteFragment)
-                getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
-
-        //-----------
-
-        // Modify search bar
-        autocompleteFragment.setHint("Search here");
-        searchBar = ((EditText) autocompleteFragment.getView().findViewById(R.id.place_autocomplete_search_input));
-        searchBar.setTextColor(Color.parseColor(MyStrings.GRAY));
-
-
-        // Initialize Navigation Drawer
-        ImageView navDrawer = (ImageView) ((LinearLayout) autocompleteFragment.getView()).getChildAt(0);
-        navDrawer.setColorFilter(Color.parseColor(MyStrings.DARK_GRAY));
-        navDrawer.setImageDrawable(getDrawable(R.mipmap.ic_menu_black_24dp));
-        navDrawer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                drawer.openDrawer(Gravity.LEFT);
-            }
-        });
-
-        ImageView clearButton = (ImageView) ((LinearLayout) autocompleteFragment.getView()).getChildAt(2);
-        clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-            }
-        });
-
-        refreshFavoriteButton();
-
-
-
         myLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -220,7 +160,7 @@ public class MainActivity extends FragmentActivity  implements
                 } else {
                     getDeviceLocation();
                     if (mCurrentLocation == null) {
-
+                        // ...
                     } else {
                         if (isMocking) {
                             toast("Mocked current location");
@@ -233,6 +173,8 @@ public class MainActivity extends FragmentActivity  implements
 
             }
         });
+
+        addFav = (ImageView) findViewById(R.id.addToFavorite);
         addFav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -245,24 +187,7 @@ public class MainActivity extends FragmentActivity  implements
         });
 
 
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(Place place) {
-                myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
-                searchBarText = place.getName().toString();
-                LatLng point = place.getLatLng();
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(point);
-                markerOptions.title(searchBarText);
-                prepareFakeLocation(point);
-                refreshFavoriteButton();
-            }
-
-            @Override
-            public void onError(Status status) { }
-        });
-
-
+        startFakingButton = (FloatingActionButton) findViewById(R.id.start_faking);
         startFakingButton.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
@@ -282,19 +207,20 @@ public class MainActivity extends FragmentActivity  implements
         // Build the Play services client for use by the Fused Location Provider and the Places API.
         buildGoogleApiClient();
         createLocationRequest();
+
         // Initialize DB
         Realm.init(this);
         realm = Realm.getDefaultInstance();
 
         // Initialize tools for navigation drawer
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-        navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-        addFav = (ImageView) findViewById(R.id.addToFavorite);
+//        toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+//        toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+//        drawer.setDrawerListener(toggle);
+//        toggle.syncState();
+//        navigationView = (NavigationView) findViewById(R.id.nav_view);
+//        navigationView.setNavigationItemSelectedListener(this);
+
         refreshFavoriteButton();
 
     }
@@ -303,7 +229,6 @@ public class MainActivity extends FragmentActivity  implements
     private void goToLocation(MyLocation goToLocation) {
         myLocationButton.setImageResource(R.mipmap.ic_crosshairs_gps_grey600_24dp);
         searchBarText = goToLocation.placeName;
-        autocompleteFragment.setText(searchBarText);
         LatLng latLng = new LatLng(goToLocation.latitude, goToLocation.longitude);
         prepareFakeLocation(latLng);
         refreshFavoriteButton();
@@ -328,17 +253,6 @@ public class MainActivity extends FragmentActivity  implements
             return isMockEnabled;
         }
         return isMockEnabled;
-    }
-
-
-
-    @Override
-    public void onBackPressed() {
-        if (drawer.isDrawerOpen(Gravity.LEFT)) {
-            drawer.closeDrawer(Gravity.LEFT);
-        } else {
-            this.finish();
-        }
     }
 
 
@@ -420,7 +334,7 @@ public class MainActivity extends FragmentActivity  implements
                     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
                     public void onClick(DialogInterface dialog, int id) {
                         String placeName = favPlaceName.getText().toString();
-                        forceCloseKeyboard(favPlaceName);
+                        forceCloseKeyboard(favPlaceName, MainActivity.this);
                         if (placeName.equals("")) {
                             toast("Name cannot be blank");
                         } else {
@@ -431,7 +345,7 @@ public class MainActivity extends FragmentActivity  implements
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        forceCloseKeyboard(favPlaceName);
+                        forceCloseKeyboard(favPlaceName, MainActivity.this);
                         dialog.cancel();
                     }
                 });
@@ -592,7 +506,7 @@ public class MainActivity extends FragmentActivity  implements
 
 
     private void createLocationRequest() {
-        mLocationRequest = LocationRequest.create();
+        LocationRequest mLocationRequest = LocationRequest.create();
         mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
         mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -643,45 +557,6 @@ public class MainActivity extends FragmentActivity  implements
     }
 
 
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.nav_home) {
-            drawer.closeDrawer(GravityCompat.START);
-        } else if (id == R.id.nav_enterCoordinates) {
-            searchByCoordinates();
-        } else if (id == R.id.nav_howto) {
-            Intent intent = new Intent(MainActivity.this, HowToActivity.class);
-            intent.putExtra("from_id", MyStrings.howID);
-            intent.putExtra("mock_status", isMocking);
-            startActivity(intent);
-
-        } else if (id == R.id.nav_favorites) {
-            Intent intent = new Intent(MainActivity.this, MyListViewActivity.class);
-            intent.putExtra("from_id", MyStrings.favID);
-            intent.putExtra("mock_status", isMocking);
-            startActivity(intent);
-        } else if (id == R.id.nav_recent) {
-            Intent intent = new Intent(MainActivity.this, MyListViewActivity.class);
-            intent.putExtra("from_id", MyStrings.recID);
-            intent.putExtra("mock_status", isMocking);
-            startActivity(intent);
-        } else if (id == R.id.nav_rate) {
-            Intent rate = new Intent(Intent.ACTION_VIEW, Uri.parse(MyStrings.RATE_URL));
-            startActivity(rate);
-        } else if (id == R.id.nav_share) {
-            Intent i = new Intent(Intent.ACTION_SEND);
-            i.setType("text/plain");
-            i.putExtra(Intent.EXTRA_SUBJECT, "Location Mocker");
-            i.putExtra(Intent.EXTRA_TEXT, MyStrings.SHARE_MSG);
-            startActivity(Intent.createChooser(i, "Share via"));
-        }
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
-    }
-
     private void searchByCoordinates() {
         LayoutInflater li = LayoutInflater.from(this);
         View promptsView = li.inflate(R.layout.dialog_coordinates, null);
@@ -707,7 +582,7 @@ public class MainActivity extends FragmentActivity  implements
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        forceCloseKeyboard(coordinates);
+                        forceCloseKeyboard(coordinates, MainActivity.this);
                         dialog.cancel();
                     }
                 });
@@ -760,16 +635,7 @@ public class MainActivity extends FragmentActivity  implements
         }
     }
 
-    public void forceCloseKeyboard(EditText editText) {
-        editText.setCursorVisible(false);
-        final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(editText.getWindowToken(), 0);
-    }
 
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
@@ -777,7 +643,8 @@ public class MainActivity extends FragmentActivity  implements
     }
 
     @Override
-    public void onConnectionSuspended(int i) {
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) { }
 
-    }
+    @Override
+    public void onConnectionSuspended(int i) { }
 }
